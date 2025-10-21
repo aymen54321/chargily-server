@@ -1,24 +1,41 @@
-export default async function handler(req, res) {
-  if (req.method === "POST") {
-    const response = await fetch("https://pay.chargily.net/test/api/invoice", {
+import express from "express";
+import cors from "cors";
+import bodyParser from "body-parser";
+import fetch from "node-fetch";
+
+const app = express();
+app.use(cors());
+app.use(bodyParser.json());
+
+app.post("/api/payment", async (req, res) => {
+  const { amount, customer_name, customer_email } = req.body;
+
+  try {
+    const response = await fetch("https://pay.chargily.com/api/invoice", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "X-Authorization": "test_sk_SaEpb2tgqPPMMKfyg4uHblhMVMltd19yXDks5C8S"
+        "Authorization": "Bearer test_sk_SaEpb2tgqPPMMKfyg4uHblhMVMltd19yXDks5C8S", // مفتاحك السري التجريبي
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        amount: 1000,
-        client: "test@example.com",
-        client_name: "Test User",
-        mode: "CIB",
-        success_url: "https://example.com/success",
-        failure_url: "https://example.com/fail"
+        client: customer_name,
+        client_email: customer_email,
+        amount: amount,
+        currency: "dzd",
+        success_url: "https://success.com",
+        failure_url: "https://fail.com"
       })
     });
 
     const data = await response.json();
-    res.status(200).json(data);
-  } else {
-    res.status(405).json({ message: "Method not allowed" });
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
-}
+});
+
+app.get("/", (req, res) => {
+  res.send("Chargily server running 🚀");
+});
+
+export default app;
